@@ -1,0 +1,69 @@
+The MATLAB code for the training of the ANN with different hidden neurons and training algorithm:
+clc
+clear
+close all
+load data
+input=[];
+target=[];
+for i=1:length(Nanoparticle)
+    for j=1:length(UltrasonicPower)
+        for k=1:length(HeaterPower)
+            for l=1:length(FlowRate)
+                input=[input [FlowRate(l);HeaterPower(k);UltrasonicPower(j);Nanoparticle(i)]];
+                target=[target Nu(l,k,j,i)];
+            end
+        end
+    end
+end
+training_alg={'trainlm';'trainscg';'trainbr'};
+hidden_neurons=[10 15 20];
+k=1;
+for i=1:length(training_alg)
+    for j=1:length(hidden_neurons)
+        for l=1:10
+            net=newff(input,target,hidden_neurons(j));
+            net.trainFcn=training_alg{i};
+            net=train(net,input,target);
+            output=sim(net,input);
+            error=abs(output-target)./target.*100;
+            MSE1(l)=mean(error.^2);
+        end
+        MSE(k)=mean(MSE1);
+        k=k+1;
+    end
+end
+save netNu
+The MATLAB code for the prediction of the outputs using the ANN at a predefined input set:
+clc
+clear
+close all
+load neth
+Nanoparticle_interp=0:0.05:0.25; %6
+UltrasonicPower_interp=0:10:50; %5
+HeaterPower_interp=240:10:450;
+FlowRate_interp=45:10:205;
+[HeaterPower_mesh,FlowRate_mesh]=meshgrid(HeaterPower_interp,FlowRate_interp);
+for i=4
+    for j=3
+        for k=1:length(HeaterPower_interp)
+            for l=1:length(FlowRate_interp)
+                h_mesh(l,k)=sim(net,[FlowRate_interp(l);HeaterPower_interp(k);...
+                    UltrasonicPower(j);Nanoparticle(i)]);
+            end
+        end
+    end
+end
+figure(1)
+hold on
+surf(HeaterPower_mesh,FlowRate_mesh,h_mesh)
+plot3(input(2,100:108),input(1,100:108),target(100:108),'*')
+view([-45,30])  
+xlabel('Heater Power (W)')
+ylabel('Volume Flow Rate (L/hr)')
+zlabel('Heat Transfer Coefficient (W/m.K)')
+title1=sprintf('Ultrasonic Power = %2.0f (W)',UltrasonicPower(j));
+title2=', \phi = ';
+title3=sprintf('%3.2f',Nanoparticle(i));
+title4='(%)';
+title([title1 title2 title3 title4])
+
